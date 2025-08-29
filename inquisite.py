@@ -8,11 +8,14 @@ import csv
 from sourmash import picklist
 
 
-def load_one_sig(filename, *, ksize=31, moltype='DNA'):
+def load_one_sig(filename, *, ksize=31, moltype='DNA', scaled=None):
     db = sourmash.load_file_as_index(filename)
-    db = db.select(ksize=ksize, moltype='DNA')
+    db = db.select(ksize=ksize, moltype=moltype, scaled=scaled)
     assert len(db) == 1
     sig = list(db.signatures())[0]
+
+    with sig.update() as sig:
+        sig.minhash = sig.minhash.downsample(scaled=scaled)
 
     return sig
 
@@ -33,10 +36,19 @@ def main():
     p.add_argument('gather_csv')
     p.add_argument('sourmash_db')
     p.add_argument('--use-match-name', help='the gather file uses "match_name" instead of "name"', action='store_true')
+    p.add_argument('-s', '--scaled', default=1000, type=int)
+    p.add_argument('-k', '--ksize', default=31, type=int)
+    p.add_argument('-m', '--moltype', default='DNA')
     args = p.parse_args()
 
-    query_sig = load_one_sig(args.query_sig)
-    metag_sig = load_one_sig(args.metagenome_sig)
+    query_sig = load_one_sig(args.query_sig,
+                             ksize=args.ksize,
+                             scaled=args.scaled,
+                             moltype=args.moltype)
+    metag_sig = load_one_sig(args.metagenome_sig,
+                             ksize=args.ksize,
+                             scaled=args.scaled,
+                             moltype=args.moltype)
 
     # get just the sketches of interest (those in the gather output)
     pl_type = 'gather'
@@ -47,12 +59,14 @@ def main():
     pl.load()
 
     db = sourmash.load_file_as_index(args.sourmash_db)
-    db = db.select(picklist=pl)
+    db = db.select(picklist=pl, ksize=args.ksize, moltype=args.moltype)
 
     print(f"Loaded {len(db)} sketches from '{args.sourmash_db}' based on gather file '{args.gather_csv}'")
 
     name_to_sig = {}
     for dbsig in db.signatures():
+        with dbsig.update() as dbsig:
+            dbsig.minhash = dbsig.minhash.downsample(scaled=args.scaled)
         name_to_sig[dbsig.name] = dbsig
 
     assert len(name_to_sig) == len(db)
