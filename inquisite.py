@@ -89,6 +89,10 @@ def main():
         match_sig = name_to_sig[name]
         match_mh = match_sig.minhash
 
+        is_same = " "
+        if query_sig == match_sig:
+            is_same = "*"
+
         overlap_mh = isect_mh & match_mh
 
         # no overlap? skip out on this match.
@@ -106,9 +110,7 @@ def main():
         overlap = len(overlap_mh)
         leftover = len(leftover_mh)
         if overlap:
-            overlaps.append((rank, name, overlap, leftover))
-
-            
+            overlaps.append((rank, name, overlap, leftover, is_same))
 
     #overlaps.sort(key=lambda x: -x[1])
 
@@ -117,10 +119,10 @@ def main():
     print('')
     print(f"rank: overlap name:                             total        remaining")
     print( "----- -------------                             ---------    ----------")
-    for (rank, name, overlap, leftover) in overlaps:
+    for (rank, name, overlap, leftover, is_same) in overlaps:
         if len(name) > 40:
             name = name[:37] + '...'
-        print(f"{rank:<4} {name:<40}   {overlap:<12} {leftover:<12}")
+        print(f"{rank:<4} {is_same}{name:<40}   {overlap:<12} {leftover:<12}")
 
 
 if __name__ == '__main__':
