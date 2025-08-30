@@ -119,24 +119,30 @@ def main():
         else:
             total_mh += overlap_mh
 
+        delta = len(leftover_mh)
         leftover_mh.remove_many(overlap_mh)
+        delta -= len(leftover_mh)
 
         overlap = len(overlap_mh)
         leftover = len(leftover_mh)
         if overlap:
-            overlaps.append((rank, name, overlap, leftover, is_same))
+            overlaps.append((rank, name, overlap, leftover, delta, is_same))
 
     #overlaps.sort(key=lambda x: -x[1])
 
     print('')
     print(f"we find the following overlaps with gather matches:")
     print('')
-    print(f"rank: overlap name:                             total        remaining")
-    print( "----- -------------                             ---------    ----------")
-    for (rank, name, overlap, leftover, is_same) in overlaps:
+    print(f"rank: overlap name:                             total        remaining  lost")
+    print( "----- -------------                             ---------    ---------  -----")
+    for (rank, name, overlap, leftover, delta, is_same) in overlaps:
         if len(name) > 40:
             name = name[:37] + '...'
-        print(f"{rank:<4} {is_same}{name:<40}   {overlap:<12} {leftover:<12}")
+        if delta:
+            delta_str = f"-{delta}"
+        else:
+            delta_str = ""
+        print(f"{rank:<4} {is_same}{name:<40}  {overlap:<12} {leftover:<10} {delta_str}")
 
 
 if __name__ == '__main__':
